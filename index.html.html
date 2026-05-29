@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulacro de Exámenes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F6F3;--bg2:#EEECEA;--bg3:#E4E2DE;
+  --text:#1A1916;--text2:#6B6860;
+  --border:#D5D3CE;
+  --accent:#2563EB;--accent-bg:#EBF0FD;
+  --green:#16A34A;--green-bg:#DCFCE7;
+  --red:#DC2626;--red-bg:#FEE2E2;
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:700px;margin:0 auto;padding:1.5rem 1rem 3rem}
+.home-title{font-size:24px;font-weight:700;margin-bottom:2px}
+.home-sub{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem}
+.stat-card{background:var(--bg2);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)}
+.stat-num{font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.stat-label{font-size:11px;color:var(--text2);margin-top:2px}
+.section-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.25rem}
+.mode-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;text-align:left;transition:all .15s;width:100%}
+.mode-btn:hover,.mode-btn.active{border-color:var(--accent);background:var(--accent-bg)}
+.mode-icon{font-size:20px;margin-bottom:6px}
+.mode-name{font-size:14px;font-weight:600;color:var(--text)}
+.mode-desc{font-size:12px;color:var(--text2);margin-top:2px}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.filter-label{font-size:12px;color:var(--text2);white-space:nowrap}
+.tag{padding:5px 11px;border-radius:99px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg);color:var(--text2);transition:all .12s;font-family:'Space Grotesk',sans-serif}
+.tag.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.start-btn{width:100%;padding:14px;border-radius:10px;background:var(--text);color:var(--bg);border:none;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s;margin-top:4px}
+.start-btn:hover{opacity:.85}
+.start-btn:disabled{opacity:.4;cursor:not-allowed}
+.quiz{padding:1rem 0 2rem}
+.quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.quiz-back{background:none;border:none;cursor:pointer;font-size:13px;color:var(--text2);padding:6px 10px;border-radius:8px;font-family:inherit}
+.quiz-back:hover{background:var(--bg2)}
+.quiz-progress-text{font-size:13px;color:var(--text2);font-family:'IBM Plex Mono',monospace}
+.progress-bar{height:4px;background:var(--bg3);border-radius:99px;margin-bottom:1.5rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width .3s}
+.q-meta{display:flex;gap:8px;margin-bottom:10px}
+.q-tag{font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600;background:var(--accent-bg);color:var(--accent)}
+.question-text{font-size:16px;font-weight:600;line-height:1.5;margin-bottom:1.25rem}
+.options{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.option{padding:12px 16px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;font-size:14px;color:var(--text);transition:all .12s;display:flex;align-items:flex-start;gap:10px;line-height:1.45;background:var(--bg);text-align:left;width:100%;font-family:'Space Grotesk',sans-serif}
+.option:hover:not(.disabled){border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.option.correct{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.option.wrong{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+.option.show-correct{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.option.disabled{cursor:default}
+.opt-letter{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;background:var(--bg2);padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:1px}
+.explanation{background:var(--bg2);border-radius:10px;padding:14px;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:1rem;border-left:3px solid var(--green);display:none}
+.explanation.wrong-exp{border-left-color:var(--red)}
+.explanation.show{display:block}
+.next-btn{width:100%;padding:13px;border-radius:10px;background:var(--text);color:var(--bg);border:none;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:none}
+.next-btn.show{display:block}
+.results{padding:1.5rem 0;text-align:center}
+.score-circle{width:110px;height:110px;border-radius:50%;margin:0 auto 1rem;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:28px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.score-circle.pass{background:var(--green-bg);color:var(--green);border:3px solid var(--green)}
+.score-circle.fail{background:var(--red-bg);color:var(--red);border:3px solid var(--red)}
+.score-circle .score-label{font-size:11px;font-weight:500;font-family:'Space Grotesk',sans-serif}
+.results-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.results-sub{font-size:14px;color:var(--text2);margin-bottom:1.5rem}
+.results-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1.5rem}
+.res-stat{background:var(--bg2);border-radius:10px;padding:12px;border:1px solid var(--border)}
+.res-num{font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.res-num.g{color:var(--green)}.res-num.r{color:var(--red)}.res-num.b{color:var(--accent)}
+.res-lbl{font-size:11px;color:var(--text2);margin-top:2px}
+.review-list{text-align:left;margin-bottom:1.5rem}
+.review-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.review-item{padding:10px 12px;border-radius:8px;background:var(--red-bg);border-left:3px solid var(--red);margin-bottom:6px;font-size:13px}
+.review-correct{font-size:12px;color:var(--green);margin-top:4px;font-weight:500}
+.res-btns{display:flex;gap:8px}
+.res-btn{flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text);transition:all .12s}
+.res-btn:hover{background:var(--bg2)}
+.res-btn.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div id="screen-home">
+  <div style="padding:1.5rem 0">
+    <div class="home-title">📚 Simulacro de Exámenes</div>
+    <div class="home-sub">180 preguntas · 6 materias</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">180</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-done">0</div><div class="stat-label">Hechas</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-correct">0</div><div class="stat-label">Correctas</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-pct">—</div><div class="stat-label">% Acierto</div></div>
+    </div>
+    <div class="section-label">Modo de estudio</div>
+    <div class="mode-grid">
+      <button class="mode-btn active" onclick="setMode('todas',this)"><div class="mode-icon">📋</div><div class="mode-name">Todas</div><div class="mode-desc">180 preguntas mezcladas</div></button>
+      <button class="mode-btn" onclick="setMode('materia',this)"><div class="mode-icon">📖</div><div class="mode-name">Por materia</div><div class="mode-desc">Filtra y estudia una materia</div></button>
+      <button class="mode-btn" onclick="setMode('fallos',this)"><div class="mode-icon">🎯</div><div class="mode-name">Mis fallos</div><div class="mode-desc">Solo preguntas que fallaste</div></button>
+    </div>
+    <div id="filters-materia" class="filter-row" style="display:none">
+      <span class="filter-label">Materia:</span>
+      <span class="tag active" onclick="selMateria(this,'todas')">Todas</span>
+      <span class="tag" onclick="selMateria(this,'Medios y Soporte')">Medios y Soporte</span>
+      <span class="tag" onclick="selMateria(this,'RRPP')">RRPP</span>
+      <span class="tag" onclick="selMateria(this,'Trabajo de Campo')">Trabajo de Campo</span>
+      <span class="tag" onclick="selMateria(this,'Marketing Digital')">Marketing Digital</span>
+      <span class="tag" onclick="selMateria(this,'Diseño y Lanzamiento')">Diseño y Lanzamiento</span>
+      <span class="tag" onclick="selMateria(this,'Lanzamiento')">Lanzamiento</span>
+    </div>
+    <button class="start-btn" id="start-btn" onclick="startSession()">Empezar ↗</button>
+  </div>
+</div>
+
+<div class="quiz hidden" id="screen-quiz">
+  <div class="quiz-header">
+    <button class="quiz-back" onclick="goHome()">← Salir</button>
+    <span class="quiz-progress-text" id="q-progress">1/30</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="q-meta" id="q-meta"></div>
+  <div class="question-text" id="q-text"></div>
+  <div class="options" id="q-options"></div>
+  <div class="explanation" id="q-explanation"></div>
+  <button class="next-btn" id="next-btn" onclick="nextQuestion()">Siguiente →</button>
+</div>
+
+<div class="results hidden" id="screen-results">
+  <div id="score-circle-wrap"></div>
+  <div class="results-title" id="res-title"></div>
+  <div class="results-sub" id="res-sub"></div>
+  <div class="results-grid">
+    <div class="res-stat"><div class="res-num g" id="res-ok">0</div><div class="res-lbl">Correctas</div></div>
+    <div class="res-stat"><div class="res-num r" id="res-fail">0</div><div class="res-lbl">Falladas</div></div>
+    <div class="res-stat"><div class="res-num b" id="res-total">0</div><div class="res-lbl">Total</div></div>
+  </div>
+  <div class="review-list" id="review-list"></div>
+  <div class="res-btns">
+    <button class="res-btn" onclick="goHome()">← Inicio</button>
+    <button class="res-btn primary" onclick="startSession()">Repetir ↺</button>
+  </div>
+</div>
+
+</div>
+<script>
+// ============================================================
+// BANCO DE PREGUNTAS
+// c = índice 0-based de la opción correcta (A=0, B=1, C=2, D=3)
+// Respuestas tomadas EXACTAMENTE del resaltado verde en cada PDF
+// ============================================================
+const QS = [
+
+// ===== MEDIOS Y SOPORTE =====
+// P1:C=2, P2:A=0, P3:D=3, P4:D=3, P5:B=1, P6:A=0, P7:C=2, P8:B=1
+// P9:D=3, P10:C=2, P11:B=1, P12:D=3, P13:A=0, P14:B=1, P15:D=3
+// P16:A=0, P17:B=1, P18:B=1, P19:C=2, P20:C=2, P21:A=0, P22:B=1
+// P23:B=1, P24:B=1, P25:D=3, P26:A=0, P27:C=2, P28:D=3, P29:A=0, P30:C=2
+
+{id:1,m:"Medios y Soporte",q:"¿Qué término se utiliza para describir el uso de pantallas o vallas interactivas en lugares públicos con el fin de captar la atención e invitar a la interacción con la publicidad?",o:["Publicidad estática exterior.","Publicidad móvil.","DOOH Marketing.","Publicidad tradicional."],c:2},
+{id:2,m:"Medios y Soporte",q:"¿Cómo se denomina el mobiliario urbano que, además de su función original, sirve como soporte para la presentación de información publicitaria?",o:["MUPI (Mueble Urbano para la Presentación de información)","OPI (Objeto publicitario Iluminado)","Marquesina.","Mobiliario urbano estándar."],c:0},
+{id:3,m:"Medios y Soporte",q:"¿Qué tipo de cartelería de PLV sobresale perpendicularmente del estante o lineal para llamar la atención del consumidor para que se detenga en ese punto con mensajes breves como 'oferta' o 'rebajas'?",o:["Colgantes.","Mástiles.","Indicadores.","Stopper."],c:3},
+{id:4,m:"Medios y Soporte",q:"¿Cómo se denomina el formato de PLV que consiste en una columna donde se lee información sobre un producto, aunque este no se exponga en ella?",o:["Display.","Exhibidor.","Luminoso.","Tótem."],c:3},
+{id:5,m:"Medios y Soporte",q:"Respecto a la publicidad directa, ¿qué método consiste en el reparto de información gratuita de un anunciante, mediante folletos, octavillas o cualquier otro formato en papel, y que nunca debe ir direccionado a una persona o titular que no haya expresado su voluntad de recibir publicidad por parte del emisor?",o:["Mailing.","Buzoneo.","Patrocinio.","Comunicado de prensa."],c:1},
+{id:6,m:"Medios y Soporte",q:"Respecto a la publicidad directa, ¿qué método consiste en un buzoneo personalizado, enviado por correo postal, que espera una respuesta del receptor, mediante cupones de descuento u otras técnicas de llamadas a la acción del posible consumidor?",o:["Mailing.","Buzoneo.","Patrocinio.","Comunicado de prensa."],c:0},
+{id:7,m:"Medios y Soporte",q:"Respecto al marketing directo, ¿qué modalidad consiste en utilizar la televisión como soporte de venta a distancia, presentando ofertas y productos que habitualmente no se venden mediante los canales habituales?",o:["Email marketing.","Telemarketing.","Televenta.","Cupón de respuesta."],c:2},
+{id:8,m:"Medios y Soporte",q:"Respecto al marketing directo, ¿qué modalidad utiliza el teléfono como método de marketing directo?",o:["Email marketing.","Telemarketing.","Televenta.","Cupón de respuesta."],c:1},
+{id:9,m:"Medios y Soporte",q:"Dentro de los tipos de publicidad por internet, señale cuál transmite visualmente un mensaje comercial, utilizando texto, logotipos, animaciones, vídeos, fotografías u otros soportes gráficos; principalmente banners y pop-ups:",o:["Publicidad en buscadores.","Marketing por correo electrónico.","Publicidad en redes sociales.","Displays."],c:3},
+{id:10,m:"Medios y Soporte",q:"¿Cómo se denomina a la página web donde los usuarios llegan tras hacer clic en un anuncio, que puede ser un apartado específico o la página de inicio del anunciante?",o:["Inserciones.","Enlaces patrocinados.","Landing page.","Pop-up."],c:2},
+{id:11,m:"Medios y Soporte",q:"¿Qué término se utiliza para describir un enlace que aparece en las páginas de resultados de un buscador?",o:["Inserciones.","Enlaces patrocinados.","Landing page.","Pop-up."],c:1},
+{id:12,m:"Medios y Soporte",q:"¿Qué estrategia de marketing digital implica crear campañas de anuncios personalizados para usuarios que ya han visitado una web o e-commerce, con el fin de incrementar el ROI?",o:["Newsletter.","Publicidad en redes sociales.","Post patrocinado.","Remarketing."],c:3},
+{id:13,m:"Medios y Soporte",q:"¿Cuál es la normativa principal en España que regula la publicidad ilícita, incluyendo las modalidades de intervención administrativa y las normas de sanción aplicables?",o:["Ley 34/1988, General de Publicidad.","Ley 3/1991, De competencia desleal.","Real Decreto Legislativo 1/2007, Ley General para la Defensa de los Consumidores y Usuarios.","Ley General de Comunicación Audiovisual."],c:0},
+{id:14,m:"Medios y Soporte",q:"¿Cómo se denomina el tipo de publicidad que utiliza estímulo de intensidades fronterizas con los umbrales de los sentidos, actuando sobre el público sin ser conscientemente percibida?",o:["Publicidad engañosa.","Publicidad subliminal.","Publicidad ilícita.","Publicidad invasiva."],c:1},
+{id:15,m:"Medios y Soporte",q:"¿Qué tipo de publicidad es considerada ilícita por inducir a error a los consumidores en su presentación o contenido?",o:["Publicidad subliminal.","Publicidad comparativa.","Publicidad directa.","Publicidad engañosa."],c:3},
+{id:16,m:"Medios y Soporte",q:"El coste por mil (CPM) se utiliza en medios:",o:["Online.","Offline.","Semiline.","Megaline."],c:1},
+{id:17,m:"Medios y Soporte",q:"Una impresión es:",o:["Cuando un usuario hace clic en un anuncio.","El registro de un usuario al ver un anuncio.","La conversión.","La rentabilidad de la campaña para generar clientes potenciales."],c:1},
+{id:18,m:"Medios y Soporte",q:"¿Qué método de decisión multicriterio discreto implica descomponer un problema en una estructura jerárquica para proporcionar una visión general del mismo?",o:["Ponderación Lineal (Scoring).","Proceso de Análisis Jerárquico (AHP)","Método de Evaluación Compensatoria.","Método de Análisis de Alternativas."],c:1},
+{id:19,m:"Medios y Soporte",q:"Un test basado en el recuerdo:",o:["Es un pretest.","Es un test de concepto.","Es un postest.","Se obtiene relacionando la presión publicitaria y el efecto publicitario."],c:2},
+{id:20,m:"Medios y Soporte",q:"Señale la respuesta correcta sobre el coste permitido u objetivo:",o:["Es un proceso de control de los costes.","No se tienen en cuenta las necesidades del mercado y la estrategia de los competidores.","El margen de beneficio deseado se denomina target profit.","Es un proceso de aumento de los costes a lo largo de toda la vida de la campaña."],c:2},
+{id:21,m:"Medios y Soporte",q:"Para determinar el coste objetivo, el método que consiste en partir de la experiencia y de las posibilidades de producción se denomina:",o:["Método de adición.","Método de sustracción.","Método integrador.","Método funcional innovador."],c:0},
+{id:22,m:"Medios y Soporte",q:"La medición de costes que indica el coste de mil impresiones de un anuncio se denomina:",o:["Coste por clic.","Coste por mil.","Coste por lead.","Coste por fred."],c:1},
+{id:23,m:"Medios y Soporte",q:"La forma de retribución que recibe la agencia como una cuota estandarizada que cobra la propia agencia por sus servicios y que los porcentajes oscilan entre 10% y 12%, se denomina:",o:["Porcentaje de los medios.","Honorarios.","Por horas trabajadas.","Fee mensual."],c:1},
+{id:24,m:"Medios y Soporte",q:"¿Qué herramienta de análisis televisivo permite a los operadores de TV y anunciantes optimizar el uso de datos de visualización?",o:["Info ío.","Instar Analytics.","Google Analytics.","Welovroi."],c:1},
+{id:25,m:"Medios y Soporte",q:"¿Qué tipo de archivo, utilizado en programas informáticos de monitorización publicitaria, almacena datos en columnas separadas por comas y filas por saltos de línea?",o:["PDF","Excel","Word","CSV."],c:3},
+{id:26,m:"Medios y Soporte",q:"¿Qué técnica de evaluación del plan de medios se utiliza para identificar y evaluar el impacto de la marca en los medios, incluyendo los digitales?",o:["Press clipping.","Encuesta a consumidores.","Análisis de tendencias.","Seguimiento de ventas."],c:0},
+{id:27,m:"Medios y Soporte",q:"¿Cuál de estas es una técnica de relaciones públicas utilizada para generar notoriedad sin contratar espacios publicitarios?",o:["Publicidad en redes sociales.","Anuncios en televisión","Comunicado de prensa.","Publicidad en vallas."],c:2},
+{id:28,m:"Medios y Soporte",q:"¿Qué es el press clipping?",o:["Un algoritmo de evaluación de costes.","Una técnica de planificación de medios.","Un método de captación de clientes potenciales.","Una herramienta para evaluar las informaciones de noticias, revistas, etc."],c:3},
+{id:29,m:"Medios y Soporte",q:"El TweetDeck es:",o:["Una herramienta de monitorización específica para Twitter (ahora X).","Una herramienta de monitorización específica para YouTube.","Una herramienta de monitorización específica para Instagram.","Una herramienta de monitorización específica periódica."],c:0},
+{id:30,m:"Medios y Soporte",q:"Una herramienta muy utilizada por los community managers para monitorizar cuentas de Facebook, Twitter, Instagram, Linkedin, etc. Es un servicio gratuito que ofrece análisis semanales y que integra los resultados de Google Analytics y facebook insight, se denomina:",o:["TweetReach.","Google Alerts.","Hootsuite.","Agregador."],c:2},
+
+// ===== RRPP =====
+// P1:D=3, P2:A=0, P3:B=1, P4:B=1, P5:A=0, P6:B=1, P7:A=0, P8:C=2
+// P9:D=3, P10:C=2, P11:B=1, P12:C=2, P13:A=0, P14:A=0, P15:B=1, P16:A=0
+// P17:B=1, P18:A=0, P19:C=2, P20:A=0, P21:A=0, P22:B=1, P23:C=2, P24:A=0
+// P25:A=0, P26:C=2, P27:B=1, P28:C=2, P29:C=2, P30:D=3
+
+{id:31,m:"RRPP",q:"El esquema global que debemos seguir a la hora de planificar cualquier evento incluye:",o:["Naturaleza del acto","Tratamiento del anfitrión","Ritmos del acto.","Todas las anteriores."],c:3},
+{id:32,m:"RRPP",q:"Cuando hablamos de usar un cronograma en la programación de eventos, pretendemos:",o:["Establecer las tareas, los periodos y tiempos adecuados a cada tarea.","Crear el presupuesto total de las acciones de RR. PP.","Segmentar a los públicos según los medios.","Realizar el envío de e-mails a las administraciones"],c:0},
+{id:33,m:"RRPP",q:"Uno de los criterios a tener en cuenta en eventos con impacto en RSC puede ser:",o:["Que los asistentes paguen el catering","Hacerles partícipes de la plantación de árboles.","Que se puedan ir los asistentes que hayan pagado entrada.","Que reutilicemos el mismo stand año tras año."],c:1},
+{id:34,m:"RRPP",q:"Se distinguen en cinco categorías que se identifican por estrellas, hablamos de:",o:["Apartahotel","Hoteles","Moteles","Pensiones"],c:1},
+{id:35,m:"RRPP",q:"Los tipos de traducción son:",o:["Simultánea, consecutiva, enlace y susurrada.","simultánea, consecutiva, asistida y susurrada.","Simultánea, consecutiva, asistida y dialogada.","Simultánea, lineal, asistida y susurrada."],c:0},
+{id:36,m:"RRPP",q:"El control de acceso en papel:",o:["Se descarga en el móvil a través de un QR.","Se puede mandar por e-mail o descargarse online","Permiten identificar al asistente en el control de acceso y durante el evento al estar visibles.","Se usa en eventos que duran varios días y los asistentes entran y salen continuamente."],c:1},
+{id:37,m:"RRPP",q:"Algunos de los datos que debemos incluir en la inscripción de un evento común según el GDRP son:",o:["Teléfono, e-mail, cargo, institución o similar, orden protocolario y profesión.","Matrícula de su vehículo y color del coche habitual.","Datos personales de los convivientes de la unidad familiar.","Datos bancarios e intereses de productos financieros."],c:0},
+{id:38,m:"RRPP",q:"Todas las notas dirigidas de forma personalizada o generalizada a algunos o todos los invitados, y en las que se detallan todos los datos relativos al orden de los actos es el:",o:["Profesiograma.","Protocolo","Proyecto/programa","Cronograma"],c:2},
+{id:39,m:"RRPP",q:"En la fase 3 del diseño del evento, el equipo de organización:",o:["Planifica el programa.","Establece el presupuesto.","Define el público objetivo.","Supervisa el montaje, el equipo técnico y los materiales necesarios."],c:3},
+{id:40,m:"RRPP",q:"Si nos referimos a la supervisión de un evento, un 'problema' surge:",o:["Al finalizar el evento.","Durante el evento.","Durante la planificación del evento","En cualquier momento."],c:2},
+{id:41,m:"RRPP",q:"El primer medidor para elegir a un proveedor de un evento es:",o:["La calidad.","El precio.","Los plazos.","El servicio."],c:1},
+{id:42,m:"RRPP",q:"Alguno de los criterios de éxito que podemos usar para valorar el éxito de un evento es:",o:["Respuesta y comentarios de las encuestas post evento.","Número de entradas vendidas.","A y B son correctas.","Que el catering no se haya desperdiciado y podamos reutilizarlo."],c:2},
+{id:43,m:"RRPP",q:"El informe final de un evento incluirá:",o:["Número de invitados VIP","Los menús que se descartaron.","El número de bolis que sobraron.","La cartelería exterior desmontada."],c:0},
+{id:44,m:"RRPP",q:"Hootsuite con relación a los eventos nos sirve para:",o:["Monitorizar varias redes sociales.","Planificar y controlar las fases del evento.","Diseñar, gestionar y crear listas de envío.","Creación, gestión, reserva y venta de entradas."],c:0},
+{id:45,m:"RRPP",q:"La normativa principal que regula toda la publicidad es:",o:["La Ley de Propiedad Intelectual.","La Ley General de Publicidad.","La Ley de Competencia Desleal.","La Ley de Servicios de la Sociedad de la Información."],c:1},
+{id:46,m:"RRPP",q:"La publicidad online la regula y controla:",o:["El comité de Mediación de Confianza Online.","La AEVEA.","La Comisión Federal de Comercio.","La Cámara de Comercio Internacional."],c:0},
+{id:47,m:"RRPP",q:"El plan de medios es:",o:["La planificación estratégica de los materiales de comunicación que vamos a utilizar dentro del plan de marketing.","La planificación estratégica de los canales de comunicación que vamos a utilizar dentro del plan de marketing.","La planificación estratégica de las fuentes de información que vamos a utilizar dentro del plan de marketing.","La planificación estratégica de los materiales de comunicación que vamos a utilizar dentro del plan de marketing."],c:1},
+{id:48,m:"RRPP",q:"El protocolo es:",o:["El conjunto de normas y disposiciones legales vigentes que rigen actos oficiales y privados.","Una disciplina que consiste en diferenciar los estatus sociales.","Una disciplina caduca que no ha avanzado nada en los últimos años.","Las normas legales para establecer los tributos según clase social."],c:0},
+{id:49,m:"RRPP",q:"El tratamiento utilizado dentro del protocolo para referirse o dirigirse a los reyes de España es:",o:["Excelentísimo/a","Su Alteza Real","Su Majestad o Señor/a","Ilustrísimo."],c:2},
+{id:50,m:"RRPP",q:"Los actos ajenos de la empresa son:",o:["Actos organizados por otras instituciones públicas o privadas, a los que asisten personas de la empresa.","Actos que organiza la empresa dentro del ámbito de la misma.","Actos que organiza la empresa dentro del ámbito de la misma, pero que afecta directamente a la imagen pública de la empresa.","Actos que se salen del ámbito de la empresa, pero que están organizados por la propia empresa."],c:0},
+{id:51,m:"RRPP",q:"La sede de la presidencia y la residencia oficial del presidente se encuentra en:",o:["El complejo de la Moncloa en Madrid","En el Palacio Real de Madrid.","En el Palacio de Oriente.","En el Congreso de los Diputados"],c:0},
+{id:52,m:"RRPP",q:"La entidad local menor de mayor importancia es:",o:["La junta de distrito.","El ayuntamiento","El municipio.","Las asociaciones de vecinos."],c:2},
+{id:53,m:"RRPP",q:"La máxima autoridad de la institución o empresa presente en el acto es:",o:["El CEO","El vicepresidente de zona.","El anfitrión.","El delegado comercial."],c:2},
+{id:54,m:"RRPP",q:"La figura de community manager está integrada:",o:["Dentro de la estrategia de comunicación global de la compañía.","Dentro de la estrategia del Departamento de RR. HH.","Dentro de la estrategia del Departamento de Operaciones y Logística.","Dentro de la estrategia del Departamento de RSC."],c:0},
+{id:55,m:"RRPP",q:"La inteligencia emocional es:",o:["La capacidad de controlar los impulsos, de regular nuestros propios estados de ánimo, y de empatizar y confiar en los demás.","La capacidad de saber reaccionar a tiempo ante la adversidad.","La capacidad de imaginar las emociones futuras ante determinados estímulos.","La capacidad de adaptación al entorno laboral y social."],c:0},
+{id:56,m:"RRPP",q:"Hablar en público sin nervios, de forma eficaz, es posible gracias a:",o:["Descuidar tu lenguaje corporal.","No dar importancia al mensaje.","La práctica.","Llevarlo casi todo preparado, sin opción a improvisar."],c:2},
+{id:57,m:"RRPP",q:"Algunas de las actitudes y aptitudes que debe tener el responsable de la organización del evento para poder liderar el equipo son:",o:["No avisar a los miembros del equipo de los pequeños cambios del evento.","Elaborar un listado con todas las tareas a desarrollar y un tiempo para la realización.","Dejar a los implicados unos horarios flexibles y que no avisen a sus superiores.","Establecer comparativas entre los miembros del equipo."],c:1},
+{id:58,m:"RRPP",q:"A la hora de organizar un evento, ¿se ha de contratar una póliza de Seguro de Responsabilidad Civil para Espectáculos y Eventos?",o:["Solo las personas físicas o jurídicas privadas.","Solo las promotoras del evento.","Las personas físicas o jurídicas, públicas o privadas, y promotoras del evento.","Solo si hace de forma continuada, pero no de forma ocasional."],c:2},
+{id:59,m:"RRPP",q:"Una competencia básica (además de otras), pero marcada con la principal e indispensable en el organizador de eventos es:",o:["Que tenga habilidades directivas.","Que tenga habilidades informáticas.","Que sea innovador y creativo.","Que sea un líder autoritario."],c:2},
+{id:60,m:"RRPP",q:"En los eventos, con relación a la imagen corporativa, tendremos en cuenta:",o:["Usar colores alternativos para causar sorpresa.","Usar el logo en el tamaño original, pese a que haya que escalar y no tenga resolución suficiente.","No usar material de apoyo, ya que distrae del objetivo principal.","Que se pueda entregar en formato digital."],c:3},
+
+// ===== TRABAJO DE CAMPO =====
+// P1:A=0, P2:B=1, P3:C=2, P4:D=3, P5:B=1, P6:B=1, P7:C=2, P8:B=1
+// P9:D=3, P10:C=2, P11:D=3, P12:C=2, P13:D=3, P14:A=0, P15:D=3, P16:A=0
+// P17:A=0, P18:C=2, P19:A=0, P20:C=2, P21:C=2, P22:C=2, P23:A=0, P24:D=3
+// P25:C=2, P26:D=3, P27:D=3, P28:A=0, P29:A=0, P30:A=0
+
+{id:61,m:"Trabajo de Campo",q:"Una de las ventajas de las técnicas de grupo es:",o:["Permite el efecto 'Bola de Nieve'","Resulta fácil moderar las sesiones","Las sesiones son estrictamente estructuradas","Todas los participantes se conocen."],c:0},
+{id:62,m:"Trabajo de Campo",q:"La creatividad es:",o:["Algo inherente del ser humano","Algo que se aprende.","Algo que permite hacer encuestas.","Lo que copias para repetirlo"],c:1},
+{id:63,m:"Trabajo de Campo",q:"El método Delphi:",o:["Es generar ideas en un entorno informal.","Es incentivar la participación de los participantes.","Es un grupo de reunión de expertos que llegan a una solución común","Permite sacar conclusiones rápidamente"],c:2},
+{id:64,m:"Trabajo de Campo",q:"El mystery shopping:",o:["Es una compra simulada.","Es una variable del método por observación","Permite medir la formación de los trabajadores de un local.","Todas las anteriores son correctas."],c:3},
+{id:65,m:"Trabajo de Campo",q:"La diferencia principal entre entrevista y cuestionario:",o:["Es que uno es una herramienta de investigación y el otro un método de marketing.","Radica en el requerimiento o no de la presencia del encuestador.","Los convierte en inseparables.","No tienen ninguna diferencia."],c:1},
+{id:66,m:"Trabajo de Campo",q:"Los cuestionarios no estructurados:",o:["Todas las preguntas son cerradas","Todas las preguntas son abiertas","Todas las preguntas son Mixtas","Todas las preguntas son Libres"],c:1},
+{id:67,m:"Trabajo de Campo",q:"Las preguntas de aproximación:",o:["Requieren más concentración.","Son preguntas intermedias.","No requieren mucho compromiso","Son muy personales, rara vez se contestan."],c:2},
+{id:68,m:"Trabajo de Campo",q:"Las preguntas clave del cuestionario:",o:["Deben aparecer mezcladas con las demás.","Deben estar claras y separadas.","No hay preguntas más importantes que otras.","Se sitúan al principio."],c:1},
+{id:69,m:"Trabajo de Campo",q:"La última etapa de diseño del cuestionario es:",o:["Definir el contenido de las preguntas.","Definir la estructura del cuestionario","Identificar la información que se precisa.","Hacer una prueba piloto"],c:3},
+{id:70,m:"Trabajo de Campo",q:"El diagrama de flujo:",o:["No permitiría las preguntas ramificadas.","No permitiría diseñar la ruta del cuestionario.","Es una herramienta que permite seguir un orden lógico.","Es una plantilla para seleccionar a los candidatos entrevistados."],c:2},
+{id:71,m:"Trabajo de Campo",q:"Para evitar palabras ambiguas en un cuestionario, debemos comprobar si:",o:["Significa lo que queremos","El contexto aclara su significado","Existe otra palabra más sencilla.","Todas son correctas."],c:3},
+{id:72,m:"Trabajo de Campo",q:"Una pregunta cuya respuesta es sí o no es:",o:["Una pregunta de respuesta múltiple.","Una pregunta de respuesta abierta.","Una pregunta dicotómica.","Una pregunta ambigua."],c:2},
+{id:73,m:"Trabajo de Campo",q:"El pretest o la prueba piloto no sirve para:",o:["Identificar errores.","Familiarizar a los encuestadores con el cuestionario.","Analizar la validez del cuestionario.","Obtener resultados finales."],c:3},
+{id:74,m:"Trabajo de Campo",q:"La codificación de preguntas con dos posibles respuestas:",o:["Se codifican mediante numeración natural.","Se realiza una matriz para cada opción","Es una estrategia para procesos futuros.","Se codifica posteriormente a su difusión"],c:0},
+{id:75,m:"Trabajo de Campo",q:"La preparación de la entrevista no debe tener en cuenta:",o:["Objetivos","Personas.","Lugar","El tamaño de la muestra aleatoria"],c:3},
+{id:76,m:"Trabajo de Campo",q:"La toma de notas en una encuesta se puede realizar:",o:["Mediante el recuerdo.","Mediante anotaciones antes de la sesión.","No se pueden realizar anotaciones, solo grabar la voz.","No se pueden realizar anotaciones, solo grabar la imagen."],c:0},
+{id:77,m:"Trabajo de Campo",q:"El procedimiento para transcribir datos:",o:["Se debe indicar siempre.","Solo se indica durante la planificación.","Tiene muchas reglas estándar.","No permite hacer comparaciones."],c:0},
+{id:78,m:"Trabajo de Campo",q:"La obtención global de la muestra:",o:["Se extraen números de forma secuencial, eliminando los anteriores escogidos.","Está solo recomendado para muestras pequeñas.","Se realiza con reemplazamiento.","Se realiza de forma indiscriminada."],c:1},
+{id:79,m:"Trabajo de Campo",q:"La encuesta PAPI:",o:["Utiliza papel y bolígrafo.","Utiliza ordenador fijo.","Utiliza dispositivo electrónico móvil.","Utiliza el teléfono."],c:0},
+{id:80,m:"Trabajo de Campo",q:"Una de las ventajas de la encuesta MCAPI:",o:["Ahorra tiempo.","Su coste es barato.","Es que esta permite la movilidad de los entrevistadores.","No requiere la presencia del entrevistador."],c:2},
+{id:81,m:"Trabajo de Campo",q:"Una de las ventajas de la encuesta CATI:",o:["Es recomendable para cuestionarios largos.","Permite material de apoyo.","No tiene limitación geográfica","Se pueden seguir los resultados en tiempo real."],c:2},
+{id:82,m:"Trabajo de Campo",q:"En la metodología multimodo se busca:",o:["Aumentar el presupuesto.","Combinar metodologías al azar.","Compensar las limitaciones con las ventajas.","Usar la metodología más barata."],c:2},
+{id:83,m:"Trabajo de Campo",q:"La aplicación Google Forms:",o:["Es gratuita","Es una demo.","Es una demo con opción a pago.","Para usarla has de navegar en Chrome."],c:0},
+{id:84,m:"Trabajo de Campo",q:"Las técnicas de supervisión y control no pueden realizarse:",o:["Antes del trabajo de campo.","Durante el trabajo de campo.","Después del trabajo de campo","Nunca, no son necesarias."],c:0},
+{id:85,m:"Trabajo de Campo",q:"Una variable nominal es:",o:["Aquella a la que se le asigna un valor con relación al nivel de la variable.","Aquella a la que se le asigna un valor con relación al nivel y que, además, la distancia entre ellas es la misma.","Aquellas a las que se le asigna un valor simplemente para etiquetar las respuestas dentro de una categoría.","Aquellas proporcionales, cuyo valor 0 indica ausencia de variable."],c:2},
+{id:86,m:"Trabajo de Campo",q:"La encuesta online o postal se puede controlar mediante:",o:["Visitas a vecinos del entrevistado.","No se pueden controlar.","Con un SMS.","A través de llamadas a los participantes."],c:3},
+{id:87,m:"Trabajo de Campo",q:"Algunas de los ratios de control son:",o:["Control personal a la entrega.","Control mediante una nueva entrevista.","Control mediante correo.","Todas son correctas."],c:3},
+{id:88,m:"Trabajo de Campo",q:"En los estudios cualitativos:",o:["Es necesario que el supervisor compruebe que los participantes cumplen con los requisitos exigidos.","No es necesario contar con los datos de contacto.","En ningún caso se deberá repetir la entrevista, ya que encarecería la investigación.","No es necesario hacer preguntas de control a los encuestados."],c:0},
+{id:89,m:"Trabajo de Campo",q:"La frecuencia relativa acumulada:",o:["Se calcula dividiendo la frecuencia absoluta acumulada entre el total de la muestra.","Es el número de veces que aparece en valor.","Nos indica la proporción con respecto a otros valores.","La mayor frecuencia coincide con el tamaño de la muestra"],c:0},
+{id:90,m:"Trabajo de Campo",q:"Los informes del trabajo de campo:",o:["No muestran los resultados de la investigación","No sirven para que los clientes entiendan los resultados.","No evalúa el proceso de desarrollo del trabajo de campo.","No tienen una estructura general."],c:3},
+
+// ===== MARKETING DIGITAL =====
+// P1:B=1, P2:D=3, P3:D=3, P4:A=0, P5:D=3, P6:C=2, P7:A=0, P8:A=0
+// P9:C=2, P10:C=2, P11:B=1, P12:C=2, P13:B=1, P14:A=0, P15:C=2, P16:D=3
+// P17:B=1, P18:B=1, P19:B=1, P20:C=2, P21:B=1, P22:D=3, P23:B=1, P24:B=1
+// P25:A=0, P26:B=1, P27:A=0, P28:D=3, P29:A=0, P30:A=0
+
+{id:91,m:"Marketing Digital",q:"Una etiqueta HTML no emparejada:",o:["Es la que va siempre en el footer.","No necesita otra complementaria.","Se escriben con <> y </>.","Es la que se usa solo en páginas seguras."],c:1},
+{id:92,m:"Marketing Digital",q:"Google Search Console permite:",o:["Extraer estadísticas de conversiones.","Corregir posibles problemas.","Medir el rendimiento y el tráfico de nuestro site.","B y C son correctas."],c:3},
+{id:93,m:"Marketing Digital",q:"Un e-procurement es:",o:["Una tienda que vende servicios a través de su canal online.","Un mercado donde la oferta y la demanda se encuentran en una plataforma.","Un negocio electrónico entre subastadores y licitadores.","Un e-commerce para el B2B."],c:3},
+{id:94,m:"Marketing Digital",q:"Las facturas electrónicas se regulan:",o:["En cada país.","Vía legislación internacional.","A través de la W3C.","A través de las leyes de la UE."],c:0},
+{id:95,m:"Marketing Digital",q:"SERP hace referencia a:",o:["Search Engine Recommended Page.","Search Engine Redirected Page.","Searching Engine Recommended Page.","Search Engine Results Page."],c:3},
+{id:96,m:"Marketing Digital",q:"El SEO off page nos permite:",o:["Mejorar la experiencia de usuario.","Mejorar el posicionamiento SEO de los buscadores.","Mejorar la autoridad de la página.","Controlar perfectamente la optimización de la página."],c:2},
+{id:97,m:"Marketing Digital",q:"La analítica web se basa en:",o:["La extracción y el análisis de datos, tanto cualitativos como cuantitativos, de las acciones llevadas a cabo.","El uso de plataformas de e-commerce.","La gestión de la usabilidad de las páginas.","El controlar perfectamente la optimización de la página."],c:0},
+{id:98,m:"Marketing Digital",q:"El ROI es:",o:["El retorno de la inversión.","El retorno de la investigación.","El retorno de la conversión.","El retorno de la adquisición."],c:0},
+{id:99,m:"Marketing Digital",q:"Las métricas o KPI:",o:["Son siempre un número.","Son un porcentaje.","Pueden ser un número o un porcentaje.","Se miden en términos cualitativos."],c:2},
+{id:100,m:"Marketing Digital",q:"La autoridad de una página es:",o:["Es el ranking dentro de las páginas más vistas.","Es la relación que tiene una página web con respecto al término de la búsqueda.","Es la popularidad de una determinada página web.","Es una página que tiene un posicionamiento SEM mayor que el resto, dentro de un site."],c:2},
+{id:101,m:"Marketing Digital",q:"Un operador de búsqueda es:",o:["Los resultados que salen en los laterales de los navegadores.","Un carácter o cadena de caracteres utilizados en una consulta para acotarla.","Lo que permite establecer una conexión cifrada entre un navegador o el ordenador de un usuario y un servidor o un sitio web.","Es un programa para traducir los resultados de las búsquedas."],c:1},
+{id:102,m:"Marketing Digital",q:"El catálogo electrónico:",o:["Es el árbol de navegación principal de la web.","Presenta quién es quién en la empresa.","Muestra al usuario aquello que va buscando.","Ha de estar traducido al menos en inglés."],c:2},
+{id:103,m:"Marketing Digital",q:"Se encuentra en la parte superior de la página y contiene información relevante sobre nuestra web, es el:",o:["Menú.","Header o encabezamiento.","Body o cuerpo.","Footer."],c:1},
+{id:104,m:"Marketing Digital",q:"El servidor:",o:["El espacio donde se aloja un sitio web para que cualquier persona en Internet pueda verlo a través de su dominio.","El uso que se hace de todos o parte de los recursos de que dispone un servidor web.","El lugar del site donde dejamos las imágenes clasificadas para su uso.","Un protocolo web para conectarnos entre ordenadores de una intranet."],c:0},
+{id:105,m:"Marketing Digital",q:"Una de las maneras de formar parte del índice de Google es:",o:["Realizar campañas SEM.","Concertar una llamada con el gestor de Google.","Esperar a que la araña de Google encuentre nuestra página web a través de algún enlace externo que la lleve a ella.","Posicionarse vía KW de la competencia."],c:2},
+{id:106,m:"Marketing Digital",q:"Revisar las páginas de nuestro site, en todos los dispositivos, para que no haya errores de carga, es una tarea de mantenimiento:",o:["Diaria.","Anual.","Mensual.","Semanal."],c:3},
+{id:107,m:"Marketing Digital",q:"Una de las cosas que debemos tener en cuenta para montar una tienda online es:",o:["Que esté en varios idiomas.","Cómo vamos a ganar dinero.","Que se puedan pagar solo con bizum.","Destacar siempre en el centro lo más antiguo."],c:1},
+{id:108,m:"Marketing Digital",q:"Uno de los aspectos legales más importantes a tener en cuenta en un e-commerce es:",o:["Cumplir los plazos de pago.","El principio de transparencia.","Saber el código postal del envío.","Incluir los gastos de envío sin IVA."],c:1},
+{id:109,m:"Marketing Digital",q:"El tiempo medio de abandono de una web es de:",o:["13 segundos.","3 segundos.","30 segundos.","23 segundos."],c:1},
+{id:110,m:"Marketing Digital",q:"Puedes obtener un certificado de firma digital a través de:",o:["La OCU.","La Viafirma.","La Fábrica Nacional de Monedas y Timbres.","Ninguna es correcta."],c:2},
+{id:111,m:"Marketing Digital",q:"La firma electrónica simple:",o:["No tiene validez legal.","Tiene validez legal.","Solo es válida adjuntando el DNI.","Está basada en un certificado reconocido y generada mediante un dispositivo seguro de creación de firma."],c:0},
+{id:112,m:"Marketing Digital",q:"Un navegador es:",o:["El protocolo de comunicación que permite las transferencias de información a través de archivos en la World Wide Web.","Un lenguaje de diseño gráfico para definir y crear la presentación de un documento estructurado escrito en un lenguaje de marcado.","Lo que permite establecer una conexión cifrada entre un navegador o el ordenador de un usuario y un servidor o un sitio web.","Un software o programa que nos permite visualizar el contenido de la Word Wide Web."],c:3},
+{id:113,m:"Marketing Digital",q:"Al elegir keywords, debemos:",o:["Estudiar las reseñas.","Estudiar el tráfico de esas palabras.","Estudiar la carga de la página.","Ninguna es correcta."],c:1},
+{id:114,m:"Marketing Digital",q:"El ticket medio en una venta es un KPI de:",o:["Redes sociales.","E-commerce.","Blog.","Foro."],c:1},
+{id:115,m:"Marketing Digital",q:"El CTA:",o:["Es un llamamiento a la acción dentro de tu web en forma de botón, banner o texto anclado, que invita al usuario a llevar a cabo una acción determinada.","Es el coste por transacción.","Indica el nivel de compromiso e involucración que un usuario mantiene con una marca.","Es la tasa que indica los beneficios generados con respecto a la inversión realizada."],c:0},
+{id:116,m:"Marketing Digital",q:"El e-commerce tiene un máximo de ___ para hacer llegar la compra al cliente.",o:["3 semanas.","30 días.","3 días.","3 meses."],c:1},
+{id:117,m:"Marketing Digital",q:"Un e-shop es:",o:["Una tienda que venden a través de su canal online.","Un mercado donde la oferta y la demanda se encuentran en una plataforma.","Un negocio electrónico entre subastadores y licitadores.","Un e-commerce para el B2B."],c:0},
+{id:118,m:"Marketing Digital",q:"Un escaparate web es útil por:",o:["Presenta a la empresa y los productos que ofrece.","Presentar ofertas y descuentos.","Presentar información comercial útil, novedades...","Todas son correctas."],c:3},
+{id:119,m:"Marketing Digital",q:"Secure Sockets Layer o SSL:",o:["Tiene como objetivo garantizar la seguridad de las transacciones con tarjeta de crédito en entornos digitales.","Tiene como finalidad proteger las transacciones de datos entre un sitio web y sus visitantes.","Es el certificado de seguridad que permite navegar por Chrome.","Tiene como misión evitar el fraude en las transacciones online hechas con tarjetas de crédito."],c:0},
+{id:120,m:"Marketing Digital",q:"El SEO on page se basa en realizar acciones:",o:["Encaminadas a mejorar nuestra propia página web.","Encaminadas a mejorar la página web de la competencia.","Encaminadas a mejorar los enlaces con terceros.","Campañas SEM para generar ROI rápido."],c:0},
+
+// ===== DISEÑO Y LANZAMIENTO =====
+// P1:C=2, P2:B=1, P3:D=3, P4:A=0, P5:C=2, P6:A=0, P7:C=2, P8:A=0
+// P9:D=3, P10:C=2, P11:B=1, P12:D=3, P13:B=1, P14:D=3, P15:D=3, P16:A=0
+// P17:A=0, P18:D=3, P19:D=3, P20:C=2, P21:A=0, P22:C=2, P23:A=0, P24:C=2
+// P25:B=1, P26:A=0, P27:A=0, P28:B=1, P29:A=0, P30:B=1
+
+{id:121,m:"Diseño y Lanzamiento",q:"El pensamiento divergente:",o:["Trata de eliminar todas las posibilidades de solución, excepto una.","Se basa en la creencia de que algunos problemas pueden resolverse mediante un único camino.","Se basa en la creencia de que algunos problemas pueden resolverse mediante varios caminos.","Usa la lógica más que la creatividad."],c:2},
+{id:122,m:"Diseño y Lanzamiento",q:"La creatividad de estilo emocional:",o:["Utiliza argumentos obtenidos de las ventajas que posee el producto.","Influye sobre el compromiso del usuario con el producto, servicio o marca.","Tiene como objetivo explotar las necesidades económicas del individuo.","Utilizan argumentos de las ventajas obtenidas tras la compra del producto."],c:1},
+{id:123,m:"Diseño y Lanzamiento",q:"¿Qué es la USP?",o:["La parte de la campaña que se ejecuta únicamente en medios propios.","El indicador sobre el presupuesto asignado a la campaña.","Un KPI o indicador de haber logrado un aumento de seguidores en RR. SS.","La propuesta única de venta, lo que hace a ese producto diferente dentro del mercado y lo distingue de su competencia."],c:3},
+{id:124,m:"Diseño y Lanzamiento",q:"El copy strategy permite:",o:["Definir los elementos por los que el consumidor prefiere comprar un producto determinado.","Definir solo los textos que van a ir en la campaña.","Definir las funciones que ha de realizar el copywriter.","Definir las horas de trabajo del copywriter."],c:0},
+{id:125,m:"Diseño y Lanzamiento",q:"La dimensión persuasiva Pathos:",o:["Apela a la autoridad, confianza o credibilidad.","Apela a la lógica y la razón.","Apela a la emoción.","Apela al compromiso."],c:2},
+{id:126,m:"Diseño y Lanzamiento",q:"Digital branding es:",o:["La gestión de imagen y marca de una empresa o una serie de productos en Internet.","El uso del logotipo en redes sociales.","El profesional que es el responsable de la marca.","El departamento que gestiona los canales sociales."],c:0},
+{id:127,m:"Diseño y Lanzamiento",q:"El SMO se refiere:",o:["A las acciones que se pueden emprender en un determinado sitio web para mejorar el tráfico y las conversiones.","A la venta a través de Facebook.","A la estrategia global en torno a las redes sociales en todo Internet.","A un KPI de conversión de las redes sociales."],c:0},
+{id:128,m:"Diseño y Lanzamiento",q:"Las fuentes Serif se prefieren:",o:["Para cuerpos de texto grandes.","Para elementos más pequeños, como titulares.","Para mensajes electrónicos.","Para combinar con las handwritten siempre."],c:0},
+{id:129,m:"Diseño y Lanzamiento",q:"En la etapa de posproducción de un video:",o:["Es cuando se realiza la elaboración del guión.","Es cuando se distribuye el vídeo.","Es donde se lleva a cabo toda la planificación realizada.","Es cuando se ensambla el material de acuerdo a lo establecido en el guión."],c:3},
+{id:130,m:"Diseño y Lanzamiento",q:"La teoría del aprendizaje multimedia dice que:",o:["Aprendemos mejor cuando nos presentan una imagen en lugar de un texto.","Aprendemos mejor cuando nos presentan un texto con mucha información.","Los usuarios comprenden mejor la información que se presenta en pequeños fragmentos o segmentos.","Los usuarios comprenden mejor la información que se presenta sin estructurar."],c:2},
+{id:131,m:"Diseño y Lanzamiento",q:"La ventaja de los programas vectoriales:",o:["Es todo lo que comprime el archivo final para que no pese.","Es que los diseños se pueden ampliar sin que haya pérdida de calidad en su resolución.","Son perfectos para editar imágenes y son de rápido aprendizaje.","Son baratos, ya que puedes usarlos sin licencia."],c:1},
+{id:132,m:"Diseño y Lanzamiento",q:"Un presupuesto publicitario sirve como:",o:["Elemento de planificación y control.","Elemento de gestión del departamento publicitario.","Elemento de planificación en Social Media.","Todas son correctas."],c:3},
+{id:133,m:"Diseño y Lanzamiento",q:"El timing de la campaña es:",o:["La planificación y la duración del spot o cuña.","Un documento en el que se refleja la planificación de las acciones del plan de medios de una campaña publicitaria en el tiempo.","La planificación del calendario editorial.","Un documento en el que se refleja el presupuesto de la parte de Social Media."],c:1},
+{id:134,m:"Diseño y Lanzamiento",q:"La 'edición no destructiva' es:",o:["Cuando se aplica algún tipo de edición y se hace una copia de la segunda modificación.","Cuando se aplica algún tipo de edición, pero se guarda la primera modificación.","Cuando se hacen tantas copias como cambios se han hecho, pero solo se guarda el último cambio.","Cuando se aplica algún tipo de edición, pero se mantiene una copia del original."],c:3},
+{id:135,m:"Diseño y Lanzamiento",q:"Los gráficos lineales:",o:["Se utilizan para mostrar porcentajes mediante diferentes cortes con diferentes colores.","Se utilizan para mostrar cambios a lo largo del tiempo.","Se utilizan para comparar cantidades.","Se utilizan para demostrar tendencias."],c:3},
+{id:136,m:"Diseño y Lanzamiento",q:"Unas de las cuatro pautas sugeridas para mejorar la creatividad en las agencias publicitarias es:",o:["Renovar constantemente la organización y su enfoque de la publicidad.","Tener metas a largo plazo y en dos años comprobar si se han cumplido.","Establecer un sistema de concurso de méritos externos.","Estar constantemente imitando lo que hacen otras agencias para no ser copiados por ellas."],c:0},
+{id:137,m:"Diseño y Lanzamiento",q:"El director creativo ha de:",o:["Aportar su experiencia y visión al resto del equipo y complementarlo.","Realizar solo tareas administrativas del departamento.","Realizar solo tareas de dirección del departamento de cuentas.","Hacer solo los copys y pensar en el plan de medios."],c:0},
+{id:138,m:"Diseño y Lanzamiento",q:"Podemos crear una USP:",o:["Basándonos en una estrategia de precios o servicios.","Para la fase de lanzamiento de un producto.","Ninguna es correcta, la USP es un KPI de atención al cliente.","A y B son correctas."],c:3},
+{id:139,m:"Diseño y Lanzamiento",q:"La generación X:",o:["Es un segmento conservador, preocupado por su futuro inmediato.","Se relaciona con el mundo mediante las redes sociales, han abandonado la mayoría de los canales tradicionales de información.","Tiene un patrimonio consolidado y gozan de una situación de retiro que les permiten viajar y dedicar parte de sus recursos al tiempo libre.","Se han adaptado relativamente rápido a los canales online, que utilizan de manera habitual para todo tipo de compras y servicios."],c:3},
+{id:140,m:"Diseño y Lanzamiento",q:"Para diseñar una web corporativa, tendremos en cuenta, dentro de la identidad de la marca, entre otros:",o:["Hablar de la propia empresa y no mostrar el propósito de la marca.","Hablar solo de la historia de la empresa, de quienes somos.","El logo, la tipografía, los colores usados...","Presentar en la home toda la información posible."],c:2},
+{id:141,m:"Diseño y Lanzamiento",q:"El estándar de video de 24 fotogramas por segundo (24 FPS) se usa:",o:["Para la mayoría del trabajo cinematográfico.","Para emisiones europeas.","Para las transmisiones estadounidenses.","Para las tomas de cámara de acción."],c:0},
+{id:142,m:"Diseño y Lanzamiento",q:"El uso de tipografías de 14 puntos o más se recomienda en:",o:["Pantallas para dispositivos de escritorio o portátiles.","Redacciones largas y presentaciones académicas.","Pantallas de menor resolución, como dispositivos móviles.","Los flyers y las tarjetas de visita."],c:2},
+{id:143,m:"Diseño y Lanzamiento",q:"Los gráficos de mapa de bits:",o:["Se usan en las fotografías.","Se usan en dibujos lineales, formas o diagramas.","Son gráficos sin compresión.","Son textos incrustados en un PDF."],c:0},
+{id:144,m:"Diseño y Lanzamiento",q:"Una de las claves para mantener el equilibrio en una presentación es:",o:["Usar siempre imágenes de un banco de imágenes.","Usar imágenes de la web, aunque sean de baja resolución y lleven marca de agua.","Hacer un resumen de la presentación.","Usar colores cálidos, en todo tipo de presentaciones."],c:2},
+{id:145,m:"Diseño y Lanzamiento",q:"Adobe Indesign se usa para:",o:["Trabajar con gráficos vectorizados.","Maquetación de documentos con múltiples páginas.","Editar imágenes.","Crear tipografías."],c:1},
+{id:146,m:"Diseño y Lanzamiento",q:"La temporalidad en una campaña es:",o:["La duración de la campaña.","Tener en cuenta solo el periodo cerca de los festivos del año en el que se lanza (Semana Santa, Navidad...).","Siempre es la etapa valle en la que se lanza.","La estación del año en la que la competencia no hace campañas."],c:0},
+{id:147,m:"Diseño y Lanzamiento",q:"La duración de la campaña depende de los objetivos de la misma. Lo habitual es prolongarla hasta un máximo de:",o:["Seis meses.","Cuatro meses.","Dos meses.","Un año."],c:0},
+{id:148,m:"Diseño y Lanzamiento",q:"La Star Strategy:",o:["Se basa en el uso de influencers en las campañas.","Se basa en que el contenido del mensaje debe estar centrado en la personalidad de la marca.","Se basa en definir los elementos por los que el consumidor prefiere comprar un producto determinado.","Se basa solo en los productos del sector de lujo."],c:1},
+{id:149,m:"Diseño y Lanzamiento",q:"Haremos un sitemap XTML si lo orientamos a:",o:["Los motores de búsqueda.","Los usuarios de nuestro site.","Los proveedores externos.","Nuestros trabajadores."],c:0},
+{id:150,m:"Diseño y Lanzamiento",q:"Cuando seleccionamos en los anuncios el 'Pago por clic':",o:["Se paga cada 1.000 clics en el banner.","La contratación se realiza por un determinado número de clics en el banner que lleva a la web destino.","La contratación se realiza por un número determinado de impresiones.","El pago se realiza por cada 1.000 impresiones."],c:1},
+
+// ===== LANZAMIENTO =====
+// P1:A=0, P2:C=2, P3:A=0, P4:A=0, P5:B=1, P6:A=0, P7:A=0, P8:A=0
+// P9:B=1, P10:A=0, P11:B=1, P12:C=2, P13:A=0, P14:A=0, P15:A=0, P16:B=1
+// P17:B=1, P18:C=2, P19:A=0, P20:B=1, P21:C=2, P22:D=3, P23:A=0, P24:C=2
+// P25:B=1, P26:C=2, P27:D=3, P28:C=2, P29:B=1, P30:A=0
+
+{id:151,m:"Lanzamiento",q:"¿Qué estrategia de marketing implica presionar a intermediarios y distribuidores para comercializar un producto?",o:["Estrategia Push.","Estrategia Pull.","Estrategia de segmentación.","Estrategia de posicionamiento."],c:0},
+{id:152,m:"Lanzamiento",q:"En el proceso de implantación de un producto, ¿qué aspecto relevante de dicha estrategia viene definido por el tipo de implantación elegida y segmentación deseada, haciendo referencia a la disposición del producto?",o:["Referencias.","Existencias.","Idoneidad.","Segmentación."],c:1},
+{id:153,m:"Lanzamiento",q:"En el modelo ECR, ¿qué división se enfoca en la organización efectiva desde la producción hasta que los productos llegan al punto de venta?",o:["Procedimientos logísticos.","Implantación comercial.","Gestión de categorías.","Planificación estratégica."],c:0},
+{id:154,m:"Lanzamiento",q:"¿Qué tipo de publicidad busca informar sobre un nuevo producto, sugerir nuevos usos o explicar su funcionamiento?",o:["Publicidad informativa.","Publicidad persuasiva.","Publicidad de recuerdo.","Publicidad comparativa."],c:0},
+{id:155,m:"Lanzamiento",q:"Esta forma de promoción implica comunicarse directamente con los clientes a través de medios como correo electrónico, mensajes de texto y anuncios en línea:",o:["Publicidad.","Marketing directo.","Promoción de ventas.","Venta personal."],c:1},
+{id:156,m:"Lanzamiento",q:"¿Qué perfil de cliente es conocido por ser el primero en probar un producto y marcar la diferencia, también conocidos como 'early adopters'?",o:["Innovadores.","Pioneros.","Mayoría temprana.","Mayoría tardía."],c:1},
+{id:157,m:"Lanzamiento",q:"En promoción en función del público objetivo, las acciones promocionales básicas, como concursos o primas por objetivos o distinciones especiales, están dirigidas a:",o:["Vendedores.","Intermediarios.","Prescriptores de producto.","Consumidores finales."],c:0},
+{id:158,m:"Lanzamiento",q:"¿Qué promoción mediante el comercio electrónico ofrece un producto gratuito al alcanzar una cierta cantidad de dinero en el pedido, dando al cliente la impresión de que está recibiendo más valor?",o:["Envío gratuito.","Descuentos en porcentajes.","Ofertas Buy-one-get-one.","Descuentos por cantidad."],c:2},
+{id:159,m:"Lanzamiento",q:"¿Cómo se denomina la zona de un establecimiento donde las ventas superan la media del conjunto de la tienda?",o:["Zonas o puntos fríos.","Zonas o puntos calientes.","Zonas de circulación incentivada.","Puntos de atracción artificial."],c:1},
+{id:160,m:"Lanzamiento",q:"¿Cómo se denomina la disposición en un punto de venta que orienta la circulación de los clientes de manera que los muebles queden frente a ellos de forma recta?",o:["Recta en parrilla.","Disposición en espiga.","Disposición libre.","Disposición abierta."],c:0},
+{id:161,m:"Lanzamiento",q:"En un punto de venta, este tipo de disposición permite visualizar la totalidad de la sala de ventas desde cualquier punto:",o:["Disposición libre.","Disposición abierta.","Disposición cerrada.","Disposición en parrilla."],c:1},
+{id:162,m:"Lanzamiento",q:"En las góndolas de un punto de venta, ¿qué nivel se encuentra entre los 120 y 170 centímetros del suelo y es el que consigue más ventas?",o:["Nivel de suelo.","Nivel de manos.","Nivel de ojos.","Nivel superior."],c:2},
+{id:163,m:"Lanzamiento",q:"¿Qué tipo de surtido se encuentra en tiendas especializadas y tradicionales, ofreciendo una variedad limitada de categorías, pero con profundidad en cada una?",o:["Surtido ancho y profundo.","Estrecho y profundo.","Ancho y poco profundo.","Estrecho y poco profundo."],c:1},
+{id:164,m:"Lanzamiento",q:"¿Qué tipo de marketing directo utiliza el correo electrónico para llegar a un target específico?",o:["E-mail marketing.","Marketing por catálogo.","Redes sociales.","Social ads."],c:0},
+{id:165,m:"Lanzamiento",q:"Señale cuáles son los objetivos de marketing que se desean alcanzar en un corto periodo de tiempo:",o:["Objetivos a corto plazo.","Objetivos a medio plazo.","Objetivos a largo plazo.","Objetivos generales."],c:0},
+{id:166,m:"Lanzamiento",q:"¿Qué herramienta de marketing directo se utiliza para seleccionar a quién va dirigida la campaña?",o:["Definición de objetivos.","Segmentación del público.","Selección de herramientas.","Puesta en marcha."],c:1},
+{id:167,m:"Lanzamiento",q:"En el contexto de la implantación de programas de fidelización de clientes, ¿qué tipo de programa de fidelización ofrece descuentos y ofertas especiales a los miembros registrados, por volumen de compra o el día de su cumpleaños?",o:["Programas de afiliación.","Envío de ofertas programadas.","Descuentos por consumo habitual.","Programas de recompensa."],c:0},
+{id:168,m:"Lanzamiento",q:"Este factor del cálculo del ROI se refiere a los ingresos obtenidos de la propia acción de la comunicación: venta de entradas, venta de merchandising, etc.",o:["Gastos.","Ingresos indirectos.","Ingresos directos.","Margen de beneficio."],c:2},
+{id:169,m:"Lanzamiento",q:"¿Cómo se denomina el tipo de análisis que se realiza antes de lanzar una campaña para medir su efectividad anticipadamente?",o:["Pre-test.","Post-test.","Análisis de ratios.","Evaluación de la actuación."],c:0},
+{id:170,m:"Lanzamiento",q:"Respecto a la desviación en los resultados, aquellas desviaciones relacionadas con el coste unitario de los materiales y el precio de venta, significando que el precio de venta establecido habrá variado con respecto al previsto, se denomina:",o:["Desviaciones de ventas.","Desviaciones de precio.","Desviación en composición.","Desviación económica."],c:1},
+{id:171,m:"Lanzamiento",q:"Respecto a las herramientas de análisis para realizar informes con los resultados, aquella herramienta que permite personalizar el panel de control, con lo que se puede visualizar de un golpe los principales datos de la página web, el blog y las redes sociales, se denomina:",o:["Google Analytics.","Google Data Studio.","Cyfe.","Hootsuite."],c:2},
+{id:172,m:"Lanzamiento",q:"Al aplicar un proceso de control, existen cuatro procesos. Señale cuál tiene carácter cualitativo:",o:["Cantidad.","Tiempo.","Costo.","Calidad."],c:3},
+{id:173,m:"Lanzamiento",q:"Este método de establecimiento de estándares se basa en el análisis de datos de experiencias pasadas:",o:["Estándares estadísticos.","Estándares fijados por apreciación.","Estándares técnicamente elaborados.","Estándares de rendimiento."],c:0},
+{id:174,m:"Lanzamiento",q:"Dentro de los ratios económico-financieros, ¿qué ratio económico indica la eficacia de la gestión de la empresa, es decir, la capacidad de sus activos para generar valor?",o:["Margen sobre ventas.","Rotación de activo circulante.","Rentabilidad económica.","Rentabilidad financiera."],c:2},
+{id:175,m:"Lanzamiento",q:"En el contexto de las técnicas de cálculo del coste de la campaña de marketing, ¿qué tipo de métrica mide el comportamiento del target con respecto a una campaña en concreto?",o:["Métricas generales.","Métricas de campaña.","Métricas de producto.","Métricas digitales."],c:1},
+{id:176,m:"Lanzamiento",q:"¿Qué ratio mide el valor total que recibe la empresa por cada cliente, comparado con lo que se ha invertido para conseguirlo?",o:["Coste de Adquisición del Cliente (CAC).","Porcentaje de coste de marketing.","Ratio LTV entre CAC.","Tiempo de recuperación de la inversión CAC."],c:2},
+{id:177,m:"Lanzamiento",q:"¿Qué tipo de rentabilidad mide la remuneración a los propietarios de la empresa?",o:["Rentabilidad económica.","Rentabilidad de ventas.","Rentabilidad de pasivos.","Rentabilidad financiera."],c:3},
+{id:178,m:"Lanzamiento",q:"Respecto a los ratios, ¿qué tipo de ratio financiero informa sobre el nivel de endeudamiento de una empresa con relación a su patrimonio neto?",o:["Ratios de liquidez.","Ratios de gestión.","Ratios de endeudamiento.","Ratios de rentabilidad."],c:2},
+{id:179,m:"Lanzamiento",q:"Una desviación donde se valora el coste estimado en el presupuesto, las ventas reales y las presupuestadas, se denomina:",o:["Desviación en composición.","Desviación económica.","Desviación técnica.","Desviación orgánica."],c:0},
+{id:180,m:"Lanzamiento",q:"Entre los motivos para llevar a cabo un programa de fidelización, encontramos:",o:["Impulsar el crecimiento de negocio.","Disminuir ingresos.","Alejarnos de la buena reputación online.","Obviar la información sobre el nicho de mercado."],c:0},
+];
+
+// ============================================================
+// ESTADO
+// ============================================================
+const ST={mode:'todas',materia:'todas',queue:[],idx:0,answered:false,sessionOk:0,sessionFail:0,sessionWrong:[],hist:{done:0,ok:0},fails:[]};
+
+function loadState(){try{const s=JSON.parse(localStorage.getItem('sim2_state')||'{}');if(s.hist)ST.hist=s.hist;if(s.fails)ST.fails=s.fails;}catch(e){}}
+function saveState(){try{localStorage.setItem('sim2_state',JSON.stringify({hist:ST.hist,fails:ST.fails}));}catch(e){}}
+loadState();updateStats();
+
+function showScreen(id){['screen-home','screen-quiz','screen-results'].forEach(s=>{document.getElementById(s).classList.toggle('hidden',s!==id);});}
+function goHome(){updateStats();showScreen('screen-home');}
+
+function setMode(mode,btn){
+  ST.mode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('filters-materia').style.display=mode==='materia'?'flex':'none';
+  const sb=document.getElementById('start-btn');
+  if(mode==='fallos'){sb.textContent=ST.fails.length>0?`Repasar ${ST.fails.length} fallos ↗`:'Sin fallos aún ✓';sb.disabled=ST.fails.length===0;}
+  else{sb.textContent='Empezar ↗';sb.disabled=false;}
+}
+
+function selMateria(el,m){
+  document.querySelectorAll('#filters-materia .tag').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');ST.materia=m;
+}
+
+function updateStats(){
+  document.getElementById('stat-done').textContent=ST.hist.done;
+  document.getElementById('stat-correct').textContent=ST.hist.ok;
+  document.getElementById('stat-pct').textContent=ST.hist.done>0?Math.round(ST.hist.ok/ST.hist.done*100)+'%':'—';
+  if(ST.mode==='fallos'){const sb=document.getElementById('start-btn');sb.textContent=ST.fails.length>0?`Repasar ${ST.fails.length} fallos ↗`:'Sin fallos aún ✓';sb.disabled=ST.fails.length===0;}
+}
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function startSession(){
+  let pool=[];
+  if(ST.mode==='fallos') pool=QS.filter(q=>ST.fails.includes(q.id));
+  else if(ST.mode==='materia') pool=ST.materia==='todas'?[...QS]:QS.filter(q=>q.m===ST.materia);
+  else pool=[...QS];
+  ST.queue=shuffle(pool);ST.idx=0;ST.sessionOk=0;ST.sessionFail=0;ST.sessionWrong=[];
+  showScreen('screen-quiz');renderQuestion();
+}
+
+function renderQuestion(){
+  const q=ST.queue[ST.idx],total=ST.queue.length;
+  document.getElementById('q-progress').textContent=`${ST.idx+1}/${total}`;
+  document.getElementById('progress-fill').style.width=`${(ST.idx/total)*100}%`;
+  document.getElementById('q-meta').innerHTML=`<span class="q-tag">${q.m}</span>`;
+  document.getElementById('q-text').textContent=q.q;
+  const exp=document.getElementById('q-explanation');exp.className='explanation';exp.textContent='';
+  const nb=document.getElementById('next-btn');nb.className='next-btn';nb.textContent=ST.idx===total-1?'Ver resultados →':'Siguiente →';
+  ST.answered=false;
+  const letters=['A','B','C','D'];
+  const opts=document.getElementById('q-options');opts.innerHTML='';
+  q.o.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='option';
+    btn.innerHTML=`<span class="opt-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.onclick=()=>answer(i,q);
+    opts.appendChild(btn);
+  });
+}
+
+function answer(idx,q){
+  if(ST.answered)return;ST.answered=true;
+  const isCorrect=idx===q.c;
+  document.querySelectorAll('.option').forEach((b,i)=>{
+    b.classList.add('disabled');
+    if(i===q.c)b.classList.add(isCorrect&&i===idx?'correct':'show-correct');
+    if(i===idx&&!isCorrect)b.classList.add('wrong');
+  });
+  const exp=document.getElementById('q-explanation');
+  if(isCorrect){
+    exp.className='explanation show';exp.textContent='✓ Correcto';
+    ST.sessionOk++;ST.hist.ok++;ST.fails=ST.fails.filter(id=>id!==q.id);
+  } else {
+    exp.className='explanation wrong-exp show';exp.textContent=`✗ Incorrecto. La respuesta correcta es: ${q.o[q.c]}`;
+    ST.sessionFail++;ST.sessionWrong.push(q);if(!ST.fails.includes(q.id))ST.fails.push(q.id);
+  }
+  ST.hist.done++;saveState();document.getElementById('next-btn').classList.add('show');
+}
+
+function nextQuestion(){
+  ST.idx++;
+  if(ST.idx>=ST.queue.length)showResults();else renderQuestion();
+}
+
+function showResults(){
+  const total=ST.queue.length,ok=ST.sessionOk,pct=Math.round(ok/total*100),pass=pct>=50;
+  document.getElementById('score-circle-wrap').innerHTML=`<div class="score-circle ${pass?'pass':'fail'}"><span>${pct}%</span><span class="score-label">${pass?'Aprobado':'A repasar'}</span></div>`;
+  document.getElementById('res-title').textContent=pass?'¡Buen trabajo! 🎉':'Sigue practicando 💪';
+  document.getElementById('res-sub').textContent=`Has respondido ${total} preguntas`;
+  document.getElementById('res-ok').textContent=ok;document.getElementById('res-fail').textContent=ST.sessionFail;document.getElementById('res-total').textContent=total;
+  const rl=document.getElementById('review-list');
+  if(ST.sessionWrong.length>0){
+    rl.innerHTML=`<div class="review-title">Preguntas falladas (${ST.sessionWrong.length})</div>`+ST.sessionWrong.map(q=>`<div class="review-item"><div>${q.q}</div><div class="review-correct">✓ ${q.o[q.c]}</div></div>`).join('');
+  } else {
+    rl.innerHTML=`<div style="text-align:center;padding:16px;color:var(--green);font-weight:600">¡Sin errores! Perfecto 🏆</div>`;
+  }
+  showScreen('screen-results');
+}
+</script>
+</body>
+</html>
